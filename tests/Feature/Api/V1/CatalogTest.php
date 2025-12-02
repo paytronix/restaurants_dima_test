@@ -33,11 +33,11 @@ class CatalogTest extends TestCase
         $response = $this->getJson('/api/v1/catalog');
 
         $response->assertStatus(200);
-        
+
         $cacheControl = $response->headers->get('Cache-Control');
         $this->assertStringContainsString('public', $cacheControl);
         $this->assertStringContainsString('max-age=60', $cacheControl);
-        
+
         $response->assertHeader('ETag')
             ->assertHeader('Last-Modified');
     }
