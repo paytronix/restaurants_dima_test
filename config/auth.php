@@ -116,4 +116,32 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Token TTLs
+    |--------------------------------------------------------------------------
+    |
+    | These values control the lifetime of access and refresh tokens.
+    |
+    */
+
+    'jwt_access_ttl' => env('JWT_ACCESS_TTL', 900),
+    'jwt_refresh_ttl' => env('JWT_REFRESH_TTL', 1209600),
+    'password_reset_ttl' => env('PASSWORD_RESET_TTL', 3600),
+    'email_verification_ttl' => env('EMAIL_VERIFICATION_TTL', 86400),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limits
+    |--------------------------------------------------------------------------
+    |
+    | These values control rate limiting for authentication endpoints.
+    |
+    */
+
+    'login_rate_limit' => env('LOGIN_RATE_LIMIT', 5),
+    'register_rate_limit' => env('REGISTER_RATE_LIMIT', 5),
+    'forgot_rate_limit' => env('FORGOT_RATE_LIMIT', 3),
+    'verify_rate_limit' => env('VERIFY_RATE_LIMIT', 3),
+
 ];
