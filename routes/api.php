@@ -3,14 +3,20 @@
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\AvailabilityController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
+use App\Http\Controllers\Api\V1\Admin\DeliveryZoneController;
+use App\Http\Controllers\Api\V1\Admin\LeadTimeController;
+use App\Http\Controllers\Api\V1\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Api\V1\Admin\MenuItemController;
 use App\Http\Controllers\Api\V1\Admin\ModifierController;
 use App\Http\Controllers\Api\V1\Admin\ModifierOptionController;
+use App\Http\Controllers\Api\V1\Admin\PickupPointController;
+use App\Http\Controllers\Api\V1\Admin\PricingRuleController;
 use App\Http\Controllers\Api\V1\Admin\SoldoutController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\CatalogController;
+use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MeController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -37,6 +43,11 @@ RateLimiter::for('email-verify', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     Route::get('/catalog', [CatalogController::class, 'index']);
+
+    Route::get('/locations', [LocationController::class, 'index']);
+    Route::get('/locations/{location}', [LocationController::class, 'show']);
+    Route::get('/locations/{location}/pickup-points', [LocationController::class, 'pickupPoints']);
+    Route::post('/locations/{location}/delivery/quote', [LocationController::class, 'deliveryQuote']);
 
     Route::prefix('auth')->group(function () {
         Route::middleware('throttle:auth')->group(function () {
@@ -92,5 +103,25 @@ Route::prefix('v1')->group(function () {
 
         Route::post('menu-items/{item}/soldout', [SoldoutController::class, 'store']);
         Route::delete('menu-items/{item}/soldout/{soldout}', [SoldoutController::class, 'destroy']);
+
+        Route::get('locations', [AdminLocationController::class, 'index']);
+        Route::post('locations', [AdminLocationController::class, 'store']);
+        Route::get('locations/{location}', [AdminLocationController::class, 'show']);
+        Route::patch('locations/{location}', [AdminLocationController::class, 'update']);
+        Route::delete('locations/{location}', [AdminLocationController::class, 'destroy']);
+
+        Route::post('locations/{location}/pickup-points', [PickupPointController::class, 'store']);
+        Route::patch('pickup-points/{pickupPoint}', [PickupPointController::class, 'update']);
+        Route::delete('pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy']);
+
+        Route::post('locations/{location}/delivery-zones', [DeliveryZoneController::class, 'store']);
+        Route::patch('delivery-zones/{deliveryZone}', [DeliveryZoneController::class, 'update']);
+        Route::delete('delivery-zones/{deliveryZone}', [DeliveryZoneController::class, 'destroy']);
+
+        Route::post('delivery-zones/{zone}/pricing-rules', [PricingRuleController::class, 'store']);
+        Route::patch('pricing-rules/{pricingRule}', [PricingRuleController::class, 'update']);
+        Route::delete('pricing-rules/{pricingRule}', [PricingRuleController::class, 'destroy']);
+
+        Route::put('locations/{location}/lead-time-settings', [LeadTimeController::class, 'update']);
     });
 });

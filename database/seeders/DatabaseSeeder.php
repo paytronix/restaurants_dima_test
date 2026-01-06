@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             MenuItemSeeder::class,
             ModifierSeeder::class,
+            LocationSeeder::class,
         ]);
     }
 }
