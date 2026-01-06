@@ -1,0 +1,1329 @@
+openapi: 3.0.3
+info:
+  title: X1 Restaurant API - Locations Module
+  description: API-only locations, pickup points, delivery zones, and pricing for X1
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+paths:
+  /locations:
+    get:
+      summary: List active locations
+      tags:
+        - Locations (Public)
+      responses:
+        '200':
+          description: Locations retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationListResponse'
+
+  /locations/{location}:
+    get:
+      summary: Get location details
+      tags:
+        - Locations (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Location retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /locations/{location}/pickup-points:
+    get:
+      summary: List active pickup points for a location
+      tags:
+        - Locations (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pickup points retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPointListResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /locations/{location}/delivery/quote:
+    post:
+      summary: Get delivery quote for coordinates
+      tags:
+        - Locations (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryQuoteRequest'
+      responses:
+        '200':
+          description: Delivery quote retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryQuoteResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations:
+    get:
+      summary: List all locations (admin)
+      tags:
+        - Locations (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+      responses:
+        '200':
+          description: Locations retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a new location
+      tags:
+        - Locations (Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreLocationRequest'
+      responses:
+        '201':
+          description: Location created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}:
+    get:
+      summary: Get location details (admin)
+      tags:
+        - Locations (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Location retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      summary: Update a location
+      tags:
+        - Locations (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        '200':
+          description: Location updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Soft delete a location
+      tags:
+        - Locations (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Location deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}/pickup-points:
+    post:
+      summary: Create a pickup point
+      tags:
+        - Pickup Points (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorePickupPointRequest'
+      responses:
+        '201':
+          description: Pickup point created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPointResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/pickup-points/{pickupPoint}:
+    patch:
+      summary: Update a pickup point
+      tags:
+        - Pickup Points (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pickupPoint
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePickupPointRequest'
+      responses:
+        '200':
+          description: Pickup point updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupPointResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Pickup point not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a pickup point
+      tags:
+        - Pickup Points (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pickupPoint
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Pickup point deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Pickup point not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}/delivery-zones:
+    post:
+      summary: Create a delivery zone
+      tags:
+        - Delivery Zones (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreDeliveryZoneRequest'
+      responses:
+        '201':
+          description: Delivery zone created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryZoneResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/delivery-zones/{deliveryZone}:
+    patch:
+      summary: Update a delivery zone
+      tags:
+        - Delivery Zones (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryZone
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeliveryZoneRequest'
+      responses:
+        '200':
+          description: Delivery zone updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryZoneResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Delivery zone not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a delivery zone
+      tags:
+        - Delivery Zones (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deliveryZone
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Delivery zone deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Delivery zone not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/delivery-zones/{zone}/pricing-rules:
+    post:
+      summary: Create or update pricing rule for a zone
+      tags:
+        - Pricing Rules (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorePricingRuleRequest'
+      responses:
+        '201':
+          description: Pricing rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingRuleResponse'
+        '200':
+          description: Pricing rule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingRuleResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Delivery zone not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/pricing-rules/{pricingRule}:
+    patch:
+      summary: Update a pricing rule
+      tags:
+        - Pricing Rules (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pricingRule
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePricingRuleRequest'
+      responses:
+        '200':
+          description: Pricing rule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingRuleResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Pricing rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a pricing rule
+      tags:
+        - Pricing Rules (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pricingRule
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Pricing rule deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Pricing rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}/lead-time-settings:
+    put:
+      summary: Upsert lead time settings for a location
+      tags:
+        - Lead Time Settings (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadTimeRequest'
+      responses:
+        '200':
+          description: Lead time settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadTimeSettingResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Location:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Warsaw Central
+        slug:
+          type: string
+          example: warsaw-central
+        status:
+          type: string
+          enum: [active, inactive]
+          example: active
+        phone:
+          type: string
+          nullable: true
+          example: "+48 22 123 4567"
+        email:
+          type: string
+          nullable: true
+          example: warsaw@example.com
+        address_line1:
+          type: string
+          example: ul. Marszalkowska 100
+        address_line2:
+          type: string
+          nullable: true
+        city:
+          type: string
+          example: Warsaw
+        postal_code:
+          type: string
+          example: "00-001"
+        country:
+          type: string
+          example: PL
+        lat:
+          type: string
+          example: "52.2297000"
+        lng:
+          type: string
+          example: "21.0122000"
+        pickup_points_count:
+          type: integer
+          example: 2
+        delivery_zones_count:
+          type: integer
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PickupPoint:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        location_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Main Entrance
+        status:
+          type: string
+          enum: [active, inactive]
+          example: active
+        address_line1:
+          type: string
+          example: ul. Marszalkowska 100
+        address_line2:
+          type: string
+          nullable: true
+          example: Ground Floor
+        city:
+          type: string
+          example: Warsaw
+        postal_code:
+          type: string
+          example: "00-001"
+        country:
+          type: string
+          example: PL
+        lat:
+          type: string
+          example: "52.2297000"
+        lng:
+          type: string
+          example: "21.0122000"
+        instructions:
+          type: string
+          nullable: true
+          example: Enter through the main door
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DeliveryZone:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        location_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Zone 1 - City Center
+        status:
+          type: string
+          enum: [active, inactive]
+          example: active
+        polygon_geojson:
+          type: object
+          properties:
+            type:
+              type: string
+              example: Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+        priority:
+          type: integer
+          example: 10
+        pricing_rule:
+          $ref: '#/components/schemas/PricingRule'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PricingRule:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        delivery_zone_id:
+          type: integer
+          example: 1
+        fee_amount:
+          type: string
+          example: "5.00"
+        min_order_amount:
+          type: string
+          example: "20.00"
+        free_delivery_threshold:
+          type: string
+          nullable: true
+          example: "80.00"
+        currency:
+          type: string
+          example: PLN
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    LeadTimeSetting:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        location_id:
+          type: integer
+          example: 1
+        pickup_lead_time_min:
+          type: integer
+          example: 15
+        delivery_lead_time_min:
+          type: integer
+          example: 40
+        zone_extra_time_min:
+          type: integer
+          example: 10
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DeliveryQuote:
+      type: object
+      properties:
+        serviceable:
+          type: boolean
+          example: true
+        delivery_zone_id:
+          type: integer
+          nullable: true
+          example: 1
+        delivery_fee:
+          type: string
+          nullable: true
+          example: "5.00"
+        currency:
+          type: string
+          example: PLN
+        min_order_amount:
+          type: string
+          nullable: true
+          example: "20.00"
+        free_delivery_threshold:
+          type: string
+          nullable: true
+          example: "80.00"
+        estimated_delivery_minutes:
+          type: integer
+          nullable: true
+          example: 50
+
+    Error:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Validation Error
+        detail:
+          type: string
+          example: The given data was invalid.
+        status:
+          type: integer
+          example: 422
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        trace_id:
+          type: string
+          example: abc123
+
+    StoreLocationRequest:
+      type: object
+      required:
+        - name
+        - slug
+        - address_line1
+        - city
+        - postal_code
+        - lat
+        - lng
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: Warsaw Central
+        slug:
+          type: string
+          maxLength: 255
+          example: warsaw-central
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+        phone:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          default: PL
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lng:
+          type: number
+          minimum: -180
+          maximum: 180
+
+    UpdateLocationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [active, inactive]
+        phone:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lng:
+          type: number
+          minimum: -180
+          maximum: 180
+
+    StorePickupPointRequest:
+      type: object
+      required:
+        - name
+        - address_line1
+        - city
+        - postal_code
+        - lat
+        - lng
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          default: PL
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lng:
+          type: number
+          minimum: -180
+          maximum: 180
+        instructions:
+          type: string
+          maxLength: 2000
+
+    UpdatePickupPointRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [active, inactive]
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lng:
+          type: number
+          minimum: -180
+          maximum: 180
+        instructions:
+          type: string
+          maxLength: 2000
+
+    StoreDeliveryZoneRequest:
+      type: object
+      required:
+        - name
+        - polygon_geojson
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+        polygon_geojson:
+          type: object
+          required:
+            - type
+            - coordinates
+          properties:
+            type:
+              type: string
+              enum: [Polygon]
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          default: 0
+
+    UpdateDeliveryZoneRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          enum: [active, inactive]
+        polygon_geojson:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [Polygon]
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+
+    StorePricingRuleRequest:
+      type: object
+      required:
+        - fee_amount
+      properties:
+        fee_amount:
+          type: number
+          minimum: 0
+          example: 5.00
+        min_order_amount:
+          type: number
+          minimum: 0
+          default: 0
+          example: 20.00
+        free_delivery_threshold:
+          type: number
+          minimum: 0
+          nullable: true
+          example: 80.00
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: PLN
+
+    UpdatePricingRuleRequest:
+      type: object
+      properties:
+        fee_amount:
+          type: number
+          minimum: 0
+        min_order_amount:
+          type: number
+          minimum: 0
+        free_delivery_threshold:
+          type: number
+          minimum: 0
+          nullable: true
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+
+    UpdateLeadTimeRequest:
+      type: object
+      properties:
+        pickup_lead_time_min:
+          type: integer
+          minimum: 0
+          maximum: 240
+          default: 20
+        delivery_lead_time_min:
+          type: integer
+          minimum: 0
+          maximum: 240
+          default: 45
+        zone_extra_time_min:
+          type: integer
+          minimum: 0
+          maximum: 120
+          default: 0
+
+    DeliveryQuoteRequest:
+      type: object
+      required:
+        - lat
+        - lng
+        - order_subtotal
+      properties:
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+          example: 52.23
+        lng:
+          type: number
+          minimum: -180
+          maximum: 180
+          example: 21.01
+        order_subtotal:
+          type: string
+          example: "49.90"
+
+    LocationResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Location'
+
+    LocationListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 1
+
+    PickupPointResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PickupPoint'
+
+    PickupPointListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PickupPoint'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 2
+
+    DeliveryZoneResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/DeliveryZone'
+
+    PricingRuleResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PricingRule'
+
+    LeadTimeSettingResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LeadTimeSetting'
+
+    DeliveryQuoteResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/DeliveryQuote'
