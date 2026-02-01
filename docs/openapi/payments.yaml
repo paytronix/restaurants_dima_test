@@ -1,0 +1,372 @@
+openapi: 3.0.3
+info:
+  title: X1 Restaurant API - Payments Module
+  description: API-only payment processing with provider abstraction, webhook handling, and idempotency support
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+paths:
+  /orders/{order}/payments:
+    post:
+      summary: Create a payment for an order
+      description: |
+        Creates a new payment transaction for the specified order. Requires an Idempotency-Key header.
+        Returns provider-specific checkout URL or client secret for completing the payment.
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Order ID
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 255
+          description: Unique key for idempotent request handling
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Missing Idempotency-Key header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Idempotency key conflict (same key, different payload)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error or order not payable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders/{order}/payments/{payment}:
+    get:
+      summary: Get payment details
+      description: Retrieves the current status and details of a payment transaction
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Order ID
+        - name: payment
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Payment transaction ID
+      responses:
+        '200':
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Order or payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders/{order}/pay:
+    post:
+      summary: Legacy payment endpoint
+      description: |
+        Backward-compatible payment endpoint that uses the stub provider by default.
+        Immediately marks the payment as succeeded for development/testing purposes.
+      tags:
+        - Payments (Legacy)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Order ID
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 255
+          description: Unique key for idempotent request handling
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegacyPayRequest'
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyPayResponse'
+        '400':
+          description: Missing Idempotency-Key header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Idempotency key conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Order not payable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /webhooks/payments/{provider}:
+    post:
+      summary: Payment provider webhook handler
+      description: |
+        Receives webhook events from payment providers. Verifies signature,
+        stores the event, and processes it idempotently.
+      tags:
+        - Webhooks
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [stripe, p24, stub]
+          description: Payment provider name
+        - name: Stripe-Signature
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Stripe webhook signature (required for Stripe webhooks)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Provider-specific webhook payload
+      responses:
+        '200':
+          description: Webhook received and processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+        '400':
+          description: Invalid signature or malformed payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Unknown provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    CreatePaymentRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [stripe, p24, stub]
+          description: Payment provider to use (defaults to PAYMENT_PROVIDER_DEFAULT)
+          example: stripe
+
+    LegacyPayRequest:
+      type: object
+      properties:
+        amount:
+          type: integer
+          minimum: 1
+          description: Amount in smallest currency unit (defaults to order total)
+          example: 5000
+
+    PaymentTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        order_id:
+          type: integer
+          example: 1
+        provider:
+          type: string
+          example: stripe
+        status:
+          type: string
+          enum: [pending, processing, succeeded, failed, cancelled, expired]
+          example: pending
+        amount:
+          type: integer
+          description: Amount in smallest currency unit
+          example: 5000
+        currency:
+          type: string
+          example: PLN
+        checkout_url:
+          type: string
+          nullable: true
+          description: URL to redirect user for payment completion
+          example: https://checkout.stripe.com/c/pay/cs_test_xxx
+        client_secret:
+          type: string
+          nullable: true
+          description: Client secret for Stripe.js integration
+          example: pi_xxx_secret_xxx
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    LegacyPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        status:
+          type: string
+          example: succeeded
+        message:
+          type: string
+          example: Payment processed successfully
+
+    WebhookReceived:
+      type: object
+      properties:
+        received:
+          type: boolean
+          example: true
+
+    Error:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Validation Error
+        detail:
+          type: string
+          example: The given data was invalid.
+        status:
+          type: integer
+          example: 422
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            provider:
+              - The selected provider is invalid.
+        trace_id:
+          type: string
+          example: abc123
+
+    PaymentResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PaymentTransaction'
+        meta:
+          type: object
+
+    LegacyPayResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LegacyPayment'
+        meta:
+          type: object
+
+    WebhookResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/WebhookReceived'
+        meta:
+          type: object
