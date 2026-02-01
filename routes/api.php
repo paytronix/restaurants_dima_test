@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\Payment\PaymentController;
+use App\Http\Controllers\Api\V1\Payment\WebhookController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -82,7 +84,13 @@ Route::prefix('v1')->group(function () {
         Route::patch('/me/addresses/{id}', [AddressController::class, 'update']);
         Route::delete('/me/addresses/{id}', [AddressController::class, 'destroy']);
         Route::post('/me/addresses/{id}/make-default', [AddressController::class, 'makeDefault']);
+
+        Route::post('/orders/{order}/payments', [PaymentController::class, 'store']);
+        Route::get('/orders/{order}/payments/{payment}', [PaymentController::class, 'show']);
+        Route::post('/orders/{order}/pay', [PaymentController::class, 'legacyPay']);
     });
+
+    Route::post('/webhooks/payments/{provider}', [WebhookController::class, 'handle']);
 
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
         Route::apiResource('categories', CategoryController::class);
