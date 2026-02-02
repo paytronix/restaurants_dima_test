@@ -1,0 +1,1012 @@
+openapi: 3.0.3
+info:
+  title: X1 Restaurant API - Calendar Module
+  description: API-only opening hours, calendar, and fulfillment slots for X1
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+paths:
+  /locations/{location}/hours:
+    get:
+      summary: Get weekly opening hours
+      description: Returns the weekly schedule and timezone for a location
+      tags:
+        - Calendar (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Weekly hours retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyHoursResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /locations/{location}/calendar:
+    get:
+      summary: Get effective calendar for date range
+      description: Returns effective open/closed days for a date range with exception info
+      tags:
+        - Calendar (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2026-02-01"
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2026-02-07"
+        - name: fulfillment_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pickup, delivery]
+      responses:
+        '200':
+          description: Calendar retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /locations/{location}/slots:
+    get:
+      summary: Get available fulfillment slots
+      description: Returns available orderable slots for a specific date
+      tags:
+        - Calendar (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2026-02-02"
+        - name: fulfillment_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pickup, delivery]
+        - name: now
+          in: query
+          required: false
+          description: Override current time for testing (RFC3339 format)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Slots retrieved successfully
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: "public, max-age=60"
+            ETag:
+              schema:
+                type: string
+              example: '"abc123"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotsResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /locations/{location}/validate-fulfillment:
+    post:
+      summary: Validate fulfillment time
+      description: Validates if a requested fulfillment time is available
+      tags:
+        - Calendar (Public)
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateFulfillmentRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentValidationResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}/hours:
+    get:
+      summary: Get weekly hours (admin)
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Weekly hours retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyHoursResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Bulk replace weekly hours
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWeeklyHoursRequest'
+      responses:
+        '200':
+          description: Weekly hours updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyHoursResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}/exceptions:
+    get:
+      summary: List exceptions
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Exceptions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create an exception
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreExceptionRequest'
+      responses:
+        '201':
+          description: Exception created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/exceptions/{exception}:
+    patch:
+      summary: Update an exception
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: exception
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExceptionRequest'
+      responses:
+        '200':
+          description: Exception updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Exception not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete an exception
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: exception
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Exception deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Exception not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/locations/{location}/fulfillment-windows:
+    get:
+      summary: Get fulfillment windows
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Fulfillment windows retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentWindowListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Create or update fulfillment window
+      tags:
+        - Calendar (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFulfillmentWindowRequest'
+      responses:
+        '200':
+          description: Fulfillment window updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfillmentWindowResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    WeeklyHours:
+      type: object
+      properties:
+        location_id:
+          type: integer
+          example: 1
+        timezone:
+          type: string
+          example: "Europe/Warsaw"
+        weekly_hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/DaySchedule'
+
+    DaySchedule:
+      type: object
+      properties:
+        day_of_week:
+          type: integer
+          minimum: 0
+          maximum: 6
+          example: 1
+        day_name:
+          type: string
+          example: "Monday"
+        is_closed:
+          type: boolean
+          example: false
+        hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/HourBlock'
+
+    HourBlock:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        open_time:
+          type: string
+          example: "10:00"
+        close_time:
+          type: string
+          example: "22:00"
+        fulfillment_type:
+          type: string
+          enum: [pickup, delivery, both]
+          example: "both"
+
+    CalendarDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-02-02"
+        day_of_week:
+          type: integer
+          example: 1
+        day_name:
+          type: string
+          example: "Monday"
+        is_open:
+          type: boolean
+          example: true
+        reason:
+          type: string
+          nullable: true
+          example: null
+        hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/HourBlock'
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExceptionSummary'
+
+    ExceptionSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [closed_all_day, open_custom, blackout_window]
+          example: "closed_all_day"
+        open_time:
+          type: string
+          nullable: true
+          example: null
+        close_time:
+          type: string
+          nullable: true
+          example: null
+        fulfillment_type:
+          type: string
+          nullable: true
+          example: null
+        reason:
+          type: string
+          nullable: true
+          example: "Christmas Day"
+
+    Slot:
+      type: object
+      properties:
+        slot_start:
+          type: string
+          format: date-time
+          example: "2026-02-02T18:30:00+01:00"
+        slot_end:
+          type: string
+          format: date-time
+          example: "2026-02-02T18:45:00+01:00"
+        is_orderable:
+          type: boolean
+          example: true
+        reason:
+          type: string
+          nullable: true
+          example: null
+
+    Exception:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        location_id:
+          type: integer
+          example: 1
+        date:
+          type: string
+          format: date
+          example: "2026-12-25"
+        type:
+          type: string
+          enum: [closed_all_day, open_custom, blackout_window]
+          example: "closed_all_day"
+        open_time:
+          type: string
+          nullable: true
+          example: null
+        close_time:
+          type: string
+          nullable: true
+          example: null
+        fulfillment_type:
+          type: string
+          nullable: true
+          enum: [pickup, delivery, both]
+          example: null
+        reason:
+          type: string
+          nullable: true
+          example: "Christmas Day"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FulfillmentWindow:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        location_id:
+          type: integer
+          example: 1
+        fulfillment_type:
+          type: string
+          enum: [pickup, delivery]
+          example: "pickup"
+        slot_interval_min:
+          type: integer
+          example: 15
+        slot_duration_min:
+          type: integer
+          example: 15
+        min_lead_time_min:
+          type: integer
+          example: 30
+        cutoff_min_before_close:
+          type: integer
+          example: 30
+        max_days_ahead:
+          type: integer
+          example: 7
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FulfillmentValidation:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        normalized_requested_at:
+          type: string
+          format: date-time
+          example: "2026-02-02T18:30:00+01:00"
+        earliest_possible_at:
+          type: string
+          format: date-time
+          example: "2026-02-02T18:00:00+01:00"
+        reason:
+          type: string
+          nullable: true
+          example: null
+
+    Error:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Validation Error"
+        detail:
+          type: string
+          example: "The given data was invalid."
+        status:
+          type: integer
+          example: 422
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        trace_id:
+          type: string
+          example: "abc123"
+
+    WeeklyHoursResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/WeeklyHours'
+
+    CalendarResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            location_id:
+              type: integer
+              example: 1
+            timezone:
+              type: string
+              example: "Europe/Warsaw"
+            from:
+              type: string
+              format: date
+              example: "2026-02-01"
+            to:
+              type: string
+              format: date
+              example: "2026-02-07"
+            days:
+              type: array
+              items:
+                $ref: '#/components/schemas/CalendarDay'
+        meta:
+          type: object
+          properties:
+            total_days:
+              type: integer
+              example: 7
+            open_days:
+              type: integer
+              example: 6
+
+    SlotsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            location_id:
+              type: integer
+              example: 1
+            date:
+              type: string
+              format: date
+              example: "2026-02-02"
+            timezone:
+              type: string
+              example: "Europe/Warsaw"
+            fulfillment_type:
+              type: string
+              example: "pickup"
+            slots:
+              type: array
+              items:
+                $ref: '#/components/schemas/Slot'
+        meta:
+          type: object
+          properties:
+            total_slots:
+              type: integer
+              example: 48
+            orderable_slots:
+              type: integer
+              example: 20
+
+    FulfillmentValidationResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FulfillmentValidation'
+
+    ExceptionResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Exception'
+
+    ExceptionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exception'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 5
+
+    FulfillmentWindowResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/FulfillmentWindow'
+
+    FulfillmentWindowListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfillmentWindow'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 2
+
+    ValidateFulfillmentRequest:
+      type: object
+      required:
+        - fulfillment_type
+        - requested_at
+      properties:
+        fulfillment_type:
+          type: string
+          enum: [pickup, delivery]
+          example: "pickup"
+        requested_at:
+          type: string
+          format: date-time
+          example: "2026-02-02T18:30:00+01:00"
+
+    UpdateWeeklyHoursRequest:
+      type: object
+      required:
+        - hours
+      properties:
+        hours:
+          type: array
+          items:
+            type: object
+            required:
+              - day_of_week
+              - open_time
+              - close_time
+              - fulfillment_type
+            properties:
+              day_of_week:
+                type: integer
+                minimum: 0
+                maximum: 6
+                example: 1
+              open_time:
+                type: string
+                example: "10:00"
+              close_time:
+                type: string
+                example: "22:00"
+              fulfillment_type:
+                type: string
+                enum: [pickup, delivery, both]
+                example: "both"
+              is_closed:
+                type: boolean
+                example: false
+
+    StoreExceptionRequest:
+      type: object
+      required:
+        - date
+        - type
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-12-25"
+        type:
+          type: string
+          enum: [closed_all_day, open_custom, blackout_window]
+          example: "closed_all_day"
+        open_time:
+          type: string
+          nullable: true
+          example: null
+        close_time:
+          type: string
+          nullable: true
+          example: null
+        fulfillment_type:
+          type: string
+          nullable: true
+          enum: [pickup, delivery, both]
+          example: null
+        reason:
+          type: string
+          nullable: true
+          example: "Christmas Day"
+
+    UpdateExceptionRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-12-25"
+        type:
+          type: string
+          enum: [closed_all_day, open_custom, blackout_window]
+          example: "closed_all_day"
+        open_time:
+          type: string
+          nullable: true
+          example: null
+        close_time:
+          type: string
+          nullable: true
+          example: null
+        fulfillment_type:
+          type: string
+          nullable: true
+          enum: [pickup, delivery, both]
+          example: null
+        reason:
+          type: string
+          nullable: true
+          example: "Christmas Day"
+
+    UpdateFulfillmentWindowRequest:
+      type: object
+      required:
+        - fulfillment_type
+      properties:
+        fulfillment_type:
+          type: string
+          enum: [pickup, delivery]
+          example: "pickup"
+        slot_interval_min:
+          type: integer
+          minimum: 5
+          maximum: 120
+          example: 15
+        slot_duration_min:
+          type: integer
+          minimum: 5
+          maximum: 120
+          example: 15
+        min_lead_time_min:
+          type: integer
+          minimum: 0
+          maximum: 1440
+          example: 30
+        cutoff_min_before_close:
+          type: integer
+          minimum: 0
+          maximum: 1440
+          example: 30
+        max_days_ahead:
+          type: integer
+          minimum: 1
+          maximum: 30
+          example: 7
