@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\AvailabilityController;
+use App\Http\Controllers\Api\V1\Admin\CalendarController as AdminCalendarController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
 use App\Http\Controllers\Api\V1\Admin\CouponController;
 use App\Http\Controllers\Api\V1\Admin\DeliveryZoneController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\V1\Admin\SoldoutController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -52,6 +54,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/locations/{location}', [LocationController::class, 'show']);
     Route::get('/locations/{location}/pickup-points', [LocationController::class, 'pickupPoints']);
     Route::post('/locations/{location}/delivery/quote', [LocationController::class, 'deliveryQuote']);
+
+    Route::get('/locations/{location}/hours', [CalendarController::class, 'hours']);
+    Route::get('/locations/{location}/calendar', [CalendarController::class, 'calendar']);
+    Route::get('/locations/{location}/slots', [CalendarController::class, 'slots']);
+    Route::post('/locations/{location}/validate-fulfillment', [CalendarController::class, 'validateFulfillment']);
 
     Route::prefix('auth')->group(function () {
         Route::middleware('throttle:auth')->group(function () {
@@ -136,6 +143,17 @@ Route::prefix('v1')->group(function () {
         Route::delete('pricing-rules/{pricingRule}', [PricingRuleController::class, 'destroy']);
 
         Route::put('locations/{location}/lead-time-settings', [LeadTimeController::class, 'update']);
+
+        Route::get('locations/{location}/hours', [AdminCalendarController::class, 'getHours']);
+        Route::put('locations/{location}/hours', [AdminCalendarController::class, 'updateHours']);
+
+        Route::get('locations/{location}/exceptions', [AdminCalendarController::class, 'listExceptions']);
+        Route::post('locations/{location}/exceptions', [AdminCalendarController::class, 'storeException']);
+        Route::patch('exceptions/{exception}', [AdminCalendarController::class, 'updateException']);
+        Route::delete('exceptions/{exception}', [AdminCalendarController::class, 'destroyException']);
+
+        Route::get('locations/{location}/fulfillment-windows', [AdminCalendarController::class, 'getFulfillmentWindows']);
+        Route::put('locations/{location}/fulfillment-windows', [AdminCalendarController::class, 'updateFulfillmentWindow']);
 
         Route::get('coupons', [CouponController::class, 'index']);
         Route::post('coupons', [CouponController::class, 'store']);

@@ -12,6 +12,8 @@ class Location extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
+    public const DEFAULT_TIMEZONE = 'Europe/Warsaw';
+
     protected $fillable = [
         'name',
         'slug',
@@ -25,6 +27,7 @@ class Location extends Model
         'country',
         'lat',
         'lng',
+        'timezone',
     ];
 
     protected $casts = [
@@ -45,6 +48,21 @@ class Location extends Model
     public function leadTimeSetting(): HasOne
     {
         return $this->hasOne(LeadTimeSetting::class);
+    }
+
+    public function locationHours(): HasMany
+    {
+        return $this->hasMany(LocationHour::class);
+    }
+
+    public function locationExceptions(): HasMany
+    {
+        return $this->hasMany(LocationException::class);
+    }
+
+    public function fulfillmentWindows(): HasMany
+    {
+        return $this->hasMany(FulfillmentWindow::class);
     }
 
     public function isActive(): bool
