@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\Admin\AvailabilityController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController;
+use App\Http\Controllers\Api\V1\Admin\CouponController;
 use App\Http\Controllers\Api\V1\Admin\DeliveryZoneController;
 use App\Http\Controllers\Api\V1\Admin\LeadTimeController;
 use App\Http\Controllers\Api\V1\Admin\LocationController as AdminLocationController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\Payment\PaymentController;
 use App\Http\Controllers\Api\V1\Payment\WebhookController;
+use App\Http\Controllers\Api\V1\Promotion\OrderCouponController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -88,6 +90,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/orders/{order}/payments', [PaymentController::class, 'store']);
         Route::get('/orders/{order}/payments/{payment}', [PaymentController::class, 'show']);
         Route::post('/orders/{order}/pay', [PaymentController::class, 'legacyPay']);
+
+        Route::post('/orders/{order}/coupon', [OrderCouponController::class, 'store']);
+        Route::delete('/orders/{order}/coupon', [OrderCouponController::class, 'destroy']);
     });
 
     Route::post('/webhooks/payments/{provider}', [WebhookController::class, 'handle']);
@@ -131,5 +136,14 @@ Route::prefix('v1')->group(function () {
         Route::delete('pricing-rules/{pricingRule}', [PricingRuleController::class, 'destroy']);
 
         Route::put('locations/{location}/lead-time-settings', [LeadTimeController::class, 'update']);
+
+        Route::get('coupons', [CouponController::class, 'index']);
+        Route::post('coupons', [CouponController::class, 'store']);
+        Route::get('coupons/{coupon}', [CouponController::class, 'show']);
+        Route::patch('coupons/{coupon}', [CouponController::class, 'update']);
+        Route::delete('coupons/{coupon}', [CouponController::class, 'destroy']);
+        Route::get('coupons/{coupon}/targets', [CouponController::class, 'listTargets']);
+        Route::post('coupons/{coupon}/targets', [CouponController::class, 'storeTarget']);
+        Route::delete('coupons/{coupon}/targets/{target}', [CouponController::class, 'destroyTarget']);
     });
 });
